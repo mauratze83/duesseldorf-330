@@ -449,15 +449,22 @@ async function downloadSession(i,k){
 /* ---------- Strava ---------- */
 let acts=[], stravaState="loading", stravaAt=null;
 function runsIn(i){ return acts.filter(a=>a._w===i).sort((a,b)=>a._d-b._d); }
+const OFFS = W.map((w,i)=> i===0?[2,4,6] : i===8?[0,2,5] : i===9?[1,3] : i===19?[1,3,5] : i===20?[2,4,6] : [1,3,6]);
 function matchWeek(i){
-  const runs=runsIn(i).slice(); const ss=W[i].s; const res=ss.map(()=>null); const p=hmP();
-  const last=ss.length-1;
-  if(runs.length && (ss[last].k==="L"||ss[last].k==="R")){
-    const longest=runs.reduce((m,a)=>a._km>m._km?a:m,runs[0]);
-    if(longest._km >= .6*sessKm(ss[last].steps,p)){ res[last]=longest; runs.splice(runs.indexOf(longest),1); }
-  }
-  for(let k=0;k<ss.length;k++){ if(res[k]) continue; if(!runs.length) break; res[k]=runs.shift(); }
-  return {res,extra:runs};
+  const runs=runsIn(i).slice(0,10), ss=W[i].s, p=hmP(), offs=OFFS[i];
+  const plan=ss.map((s,k)=>({km:sessKm(s.steps,p), off:offs[k]??3, opt:s.k==="O"}));
+  const dayOf=r=>Math.round((day0(r._d)-wStart(i))/864e5);
+  const cost=(r,q)=>Math.abs(dayOf(r)-q.off)*0.6 + Math.abs(r._km-q.km)/Math.max(q.km,3)*3;
+  let best={c:Infinity,a:null};
+  (function rec(k,used,a,c){
+    if(c>=best.c) return;
+    if(k===ss.length){ best={c,a:a.slice()}; return; }
+    a.push(-1); rec(k+1,used,a,c+(plan[k].opt?0.8:4)); a.pop();
+    for(let j=0;j<runs.length;j++){ if(used&(1<<j)) continue; a.push(j); rec(k+1,used|(1<<j),a,c+cost(runs[j],plan[k])); a.pop(); }
+  })(0,0,[],0);
+  const res=best.a.map(j=>j<0?null:runs[j]);
+  const extra=runsIn(i).filter(r=>!res.includes(r));
+  return {res,extra};
 }
 async function loadStrava(){
   stravaState="loading"; renderSync();
@@ -635,7 +642,7 @@ function renderPaces(){
 const TIPS=[
  {key:true,h:"Locker heißt wirklich locker",b:`<p>Mit drei Läufen pro Woche zählt jede Einheit. Die lockeren und langen Läufe bringen dir nur etwas, wenn du dabei ausgeruht genug für die harten Tage bleibst.</p><ul><li>Langer Lauf und lockere Läufe: Puls unter ca. 148.</li><li>Lieber 10 Sekunden zu langsam als 10 zu schnell.</li><li>Tempo gibt es nur in den markierten Abschnitten.</li></ul>`},
  {key:true,h:"Plantarfaszie im Griff behalten",b:`<ul><li>Täglich Waden dehnen, gestreckt und gebeugt, je 3 × 30 s.</li><li>Langsame Wadenheber auf einer Stufe, 3 × 12, den Weg runter über 3 Sekunden. Gut nach dem Gym-Training.</li><li>Fußsohle morgens mit einem Ball oder einer gefrorenen Flasche rollen.</li><li>Nicht barfuß auf hartem Boden, gerade morgens.</li><li>Steigerungen und Intervalle auf ebenem Untergrund, keine Bergsprints.</li><li>Wenn der Anlaufschmerz zwei Wochen nicht besser wird: Physio.</li></ul>`},
- {h:"Flexible Wochentage",b:`<p>Die Tage sind Vorschläge. Wichtig ist nur: mindestens ein Tag Abstand zwischen zwei Läufen, und nicht die Qualitätseinheit direkt vor dem langen Lauf.</p><ul><li>Ideal: Di Qualität, Do locker oder Tempo, So lang.</li><li>Fällt ein Lauf aus, streiche den lockeren, nicht den langen.</li><li>Nicht nachholen, indem du zwei Einheiten auf einen Tag packst.</li></ul>`},
+ {h:"Flexible Wochentage",b:`<p>Die Tage sind Vorschläge. Wichtig ist nur: mindestens ein Tag Abstand zwischen zwei Läufen, und nicht die Qualitätseinheit direkt vor dem langen Lauf.</p><ul><li>Ideal: Di Qualität, Do locker oder Tempo, So lang.</li><li>Fällt ein Lauf aus, streiche den lockeren, nicht den langen. Nur zwei Läufe geschafft? Dann sind langer Lauf und Qualität die wichtigsten.</li><li>Ein vierter Lauf ab und zu ist okay: kurz und locker, nicht in Entlastungswochen. Die Seite zeigt ihn als „Zusätzlich gelaufen“.</li><li>Nicht nachholen, indem du zwei Einheiten auf einen Tag packst.</li></ul>`},
  {key:true,h:"Workouts auf die Uhr",b:`<p>Der Plan steht in deinem intervals.icu-Kalender. intervals.icu schickt die Einheiten der nächsten Woche automatisch über die Zepp-App auf deine Balance 2, inklusive Pace-Zielen pro Schritt. Auf der Uhr findest du sie unter Workout → Mein Trainingsplan.</p><ul><li>Einheit verschieben: in intervals.icu per Drag &amp; Drop, die Uhr übernimmt das.</li><li>Neue HM-Zeit: das Skript mit <code>--hm h:mm:ss</code> erneut starten und hier unter „Paces &amp; Puls“ eintragen.</li><li>Einheit teilen: „Workout-Datei laden“ speichert ein ZIP mit FIT-Datei und intervals.icu-Text. Die FIT-Datei zieht man in intervals.icu auf einen Kalendertag. Sie enthält deine Paces, nicht die der anderen Person.</li><li>Einzelne Einheit von Hand: „Text kopieren“ und im Workout-Builder einfügen.</li></ul>`},
  {h:"Verpflegung trainieren",b:`<p>Im Marathon brauchst du ungefähr 60–90 g Kohlenhydrate pro Stunde. Der Magen muss das lernen.</p><ul><li>Ab Woche 12 in jedem langen Lauf über 22 km Gels nehmen.</li><li>Alle 30–40 Minuten ein Gel, mit Wasser.</li><li>Im Rennen nur nehmen, was du im Training getestet hast.</li></ul>`},
  {h:"Die Uhr als Frühwarnsystem",b:`<p>Dein Ruhepuls liegt bei etwa 43, deine HRV bei etwa 64. Achte auf Abweichungen, nicht auf einzelne Werte.</p><ul><li>Ruhepuls 5+ Schläge höher und HRV deutlich unter normal: Qualitätseinheit gegen einen lockeren Lauf tauschen.</li><li>Zwei solche Tage in Folge: Ruhetag.</li><li>Erkältung unterhalb des Halses: nicht laufen.</li></ul>`},
