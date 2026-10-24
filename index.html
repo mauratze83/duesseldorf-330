@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Düsseldorf 3:30</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* Layout: Startnummer-Kopf mit Countdown, darunter Tabs; Wochenansicht als Karten-Raster, Gesamtplan als Zeitleiste mit Soll/Ist-Balken */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --ink:#13222b; --muted:#566874; --line:#d3dde1; --chip:#e3eaed;
+  --accent:#0a6c74; --accent-ink:#ffffff; --accent-soft:#d6ebed;
+  --amber:#a8630a; --amber-soft:#f5e6cf;
+  --ok:#1d7a46; --ok-soft:#dcefe3; --bad:#b0392d; --bad-soft:#f5dddA;
+  --ph-erh:#7d8e99; --ph-grund:#3a78a1; --ph-auf:#0a6c74; --ph-spez:#a8630a; --ph-taper:#6a58a3; --ph-race:#b0392d;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d161b; --surface:#152229; --ink:#e2ebee; --muted:#93a6b0; --line:#273940; --chip:#20313a;
+  --accent:#55b9c1; --accent-ink:#05181b; --accent-soft:#163a3e;
+  --amber:#e0a04a; --amber-soft:#3a2b14;
+  --ok:#5fc48b; --ok-soft:#163426; --bad:#ea7d70; --bad-soft:#3c1f1b;
+  --ph-erh:#82939d; --ph-grund:#6aa8d0; --ph-auf:#55b9c1; --ph-spez:#e0a04a; --ph-taper:#a593e0; --ph-race:#ea7d70;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d161b; --surface:#152229; --ink:#e2ebee; --muted:#93a6b0; --line:#273940; --chip:#20313a;
+  --accent:#55b9c1; --accent-ink:#05181b; --accent-soft:#163a3e;
+  --amber:#e0a04a; --amber-soft:#3a2b14;
+  --ok:#5fc48b; --ok-soft:#163426; --bad:#ea7d70; --bad-soft:#3c1f1b;
+  --ph-erh:#82939d; --ph-grund:#6aa8d0; --ph-auf:#55b9c1; --ph-spez:#e0a04a; --ph-taper:#a593e0; --ph-race:#ea7d70;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+
+/* Kopf */
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{padding-block:22px 18px;display:grid;gap:16px}
+.eyebrow{font-family:var(--f-display);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--muted)}
+.hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 28px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(42px,8vw,72px);line-height:.9;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 .goal{color:var(--accent)}
+.countdown{display:flex;align-items:baseline;gap:10px}
+.countdown b{font-family:var(--f-display);font-size:clamp(40px,7vw,60px);line-height:.9;font-weight:600;font-variant-numeric:tabular-nums}
+.countdown span{color:var(--muted);font-size:13px;max-width:8em;line-height:1.25}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.stat{border-top:2px solid var(--ink);padding-top:8px;min-width:0}
+.stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stat .v{font-family:var(--f-display);font-size:24px;font-weight:600;line-height:1.15}
+.stat .s{font-size:12.5px;color:var(--muted)}
+.sync{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.load{background:var(--amber)}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;font-size:12.5px}
+
+/* Tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto}
+.tab{background:none;border:0;padding:12px 12px 10px;border-bottom:3px solid transparent;font-family:var(--f-display);font-size:17px;font-weight:600;letter-spacing:.03em;color:var(--muted);white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+main.wrap{padding-block:22px 48px}
+section[hidden]{display:none}
+
+/* Woche */
+.weekhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.weekhead h2{font-family:var(--f-display);font-size:30px;font-weight:700;margin:0;line-height:1}
+.weekhead .dates{color:var(--muted);font-size:14px}
+.nav{display:flex;gap:6px}
+.nav button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 12px;font-size:14px}
+.nav button:disabled{opacity:.4;cursor:default}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:4px;color:#fff;background:var(--c,var(--muted))}
+.pill.ghost{background:transparent;color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
+.focus{margin:10px 0 16px;max-width:68ch;color:var(--ink)}
+.prog{display:grid;gap:6px;margin-bottom:22px;max-width:520px}
+.prog .bar{height:8px;background:var(--chip);border-radius:4px;overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.prog .t{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;min-width:0}
+.card.done{border-color:color-mix(in srgb,var(--ok) 55%,var(--line))}
+.card.missed{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.card .row1{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.daychip{font-size:12.5px;color:var(--muted);font-weight:500}
+.card h3{font-family:var(--f-display);font-size:24px;font-weight:600;margin:0;line-height:1.05;text-wrap:balance}
+.km{font-family:var(--f-display);font-size:20px;font-weight:600;color:var(--accent)}
+.km small{font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:400}
+.note{font-size:13.5px;color:var(--muted);margin:0}
+.steps{list-style:none;margin:0;padding:10px 12px;background:var(--bg);border-radius:8px;display:grid;gap:6px;font-size:13px}
+.steps li{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:baseline}
+.steps .lab{font-weight:600}
+.steps .det{font-family:var(--f-mono);font-size:12.5px;color:var(--ink);text-align:right}
+.steps .sub{grid-column:1/-1;color:var(--muted);font-size:12px;margin-top:-2px}
+.steps .rep{font-weight:600;color:var(--accent);grid-template-columns:1fr}
+.steps .in{padding-left:14px;border-left:2px solid var(--accent-soft)}
+.cardfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.copy{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 10px;font-size:12.5px}
+.ist{font-size:13px;padding:8px 10px;border-radius:6px;background:var(--chip)}
+.ist.ok{background:var(--ok-soft);color:var(--ink)} .ist.ok b{color:var(--ok)}
+.ist.miss{background:var(--bad-soft)} .ist.miss b{color:var(--bad)}
+.extra{margin-top:18px;font-size:13.5px;color:var(--muted)}
+.footcheck{margin-top:22px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px 16px;display:grid;gap:8px;max-width:760px}
+.footcheck h4{margin:0;font-size:14px}
+.scale{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;font-size:13px}
+.scale div{padding:8px 10px;border-radius:6px;background:var(--bg)}
+.scale b{display:block;font-family:var(--f-mono);font-size:12.5px}
+
+/* Plan */
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 14px 6px;margin-bottom:18px}
+.chartbox h3{margin:0 0 2px;font-family:var(--f-display);font-size:20px;font-weight:600}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;margin-bottom:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.chartscroll{overflow-x:auto}
+svg text{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+.weeks{display:grid;gap:6px}
+.wk{display:grid;grid-template-columns:52px 1fr auto;gap:4px 14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:10px 12px;text-align:left;width:100%}
+.wk.cur{box-shadow:0 0 0 2px var(--accent)}
+.wk .n{font-family:var(--f-display);font-size:22px;font-weight:700;line-height:1}
+.wk .mid{min-width:0;display:grid;gap:2px}
+.wk .mid .d{font-size:12.5px;color:var(--muted)}
+.wk .mid .ss{font-size:13px;overflow-wrap:anywhere}
+.wk .kms{text-align:right;font-family:var(--f-mono);font-size:13px;white-space:nowrap}
+.wk .kms .a{color:var(--ok);font-weight:500}
+
+/* Paces */
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:18px;align-items:start}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;min-width:0}
+.panel h3{margin:0;font-family:var(--f-display);font-size:22px;font-weight:600}
+.field{display:grid;gap:4px}
+.field label{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.field input{font-family:var(--f-mono);font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%;max-width:220px}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.big{font-family:var(--f-display);font-size:34px;font-weight:700;line-height:1}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:500}
+td.num{white-space:nowrap}
+.zk{display:inline-block;min-width:22px;text-align:center;font-family:var(--f-mono);font-weight:500;border-radius:4px;background:var(--chip);padding:0 4px}
+
+/* Tipps */
+.tips{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start}
+.tip{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.tip h3{margin:0 0 8px;font-family:var(--f-display);font-size:21px;font-weight:600;line-height:1.1}
+.tip p,.tip li{font-size:14px;max-width:65ch}
+.tip p{margin:0 0 8px}
+.tip ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.tip.key{border-color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 45%,var(--surface))}
+.icu summary{font-size:12.5px;color:var(--muted);cursor:pointer}
+.icu pre{margin:8px 0 0;padding:10px;background:var(--bg);border-radius:6px;font-family:var(--f-mono);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:all}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;z-index:20}
+@media (prefers-reduced-motion:no-preference){.prog .bar i{transition:width .4s ease}}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="eyebrow">Uniper Düsseldorf Marathon · Sonntag, 18. April 2027</div>
+  <div class="hero">
+    <h1>Düsseldorf <span class="goal">3:30</span></h1>
+    <div class="countdown"><b id="days">–</b><span>Tage bis zum Startschuss</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="l">Trainingswoche</div><div class="v" id="st-week">–</div><div class="s" id="st-phase">–</div></div>
+    <div class="stat"><div class="l">Diese Woche Soll / Ist</div><div class="v num" id="st-km">–</div><div class="s" id="st-runs">–</div></div>
+    <div class="stat"><div class="l">Zieltempo</div><div class="v num">4:58 /km</div><div class="s" id="st-pred">–</div></div>
+    <div class="stat"><div class="l">Läufe (intervals.icu)</div><div class="sync"><span class="dot" id="sync-dot"></span><span class="s" id="sync-text">Verbinde…</span></div><div id="sync-act"></div></div>
+  </div>
+</div></header>
+
+<nav class="tabs" aria-label="Ansichten"><div class="wrap" role="tablist">
+  <button class="tab" role="tab" data-tab="woche" id="t-woche">Woche</button>
+  <button class="tab" role="tab" data-tab="plan" id="t-plan">Gesamtplan</button>
+  <button class="tab" role="tab" data-tab="paces" id="t-paces">Paces &amp; Puls</button>
+  <button class="tab" role="tab" data-tab="tipps" id="t-tipps">Tipps</button>
+</div></nav>
+
+<main class="wrap">
+  <section id="v-woche"></section>
+  <section id="v-plan" hidden></section>
+  <section id="v-paces" hidden></section>
+  <section id="v-tipps" hidden></section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- Grunddaten ---------- */
+const START = new Date(2026,9,26);          // Mo 26.10.2026 = Woche 0
+const RACE  = new Date(2027,3,18);          // So 18.04.2027
+const GOAL_SEC = 3*3600+30*60;
+const DEFAULTS = {ref:"1:45:00", hrmax:188, hrrest:43};
+let settings = Object.assign({}, DEFAULTS);
+try{ const s = JSON.parse(localStorage.getItem("dus330-settings")||"null"); if(s) settings = Object.assign(settings, s);}catch(e){}
+
+const Z = {
+  E:{n:"Locker",          pace:p=>[p+45,p+75],            hr:[.57,.72]},
+  L:{n:"Langer Lauf",     pace:p=>[p+40,p+65],            hr:[.57,.74]},
+  M:{n:"Marathontempo aktuell", pace:p=>[p*1.04-4,p*1.04+4], hr:[.78,.84]},
+  G:{n:"Ziel-Marathontempo", pace:()=>[294,302],          hr:[.78,.85]},
+  H:{n:"Halbmarathontempo", pace:p=>[p-3,p+3],            hr:[.84,.89]},
+  T:{n:"Schwelle",        pace:p=>[p*.975-4,p*.975+4],    hr:[.84,.90]},
+  I:{n:"Intervall",       pace:p=>[p*.905-4,p*.905+4],    hr:[.90,.95]},
+  S:{n:"Steigerung",      pace:p=>[p*.82,p*.88],          hr:null},
+  J:{n:"Trabpause",       pace:p=>[p+90,p+120],           hr:null}
+};
+const KIND = {
+  Q:{t:"Qualität", c:"var(--accent)"}, E:{t:"Locker", c:"var(--ph-erh)"}, M:{t:"Tempo", c:"var(--amber)"},
+  L:{t:"Langer Lauf", c:"var(--ph-grund)"}, R:{t:"Rennen", c:"var(--ph-race)"}, O:{t:"Optional", c:"var(--ph-erh)"}
+};
+const PH = {Erholung:"var(--ph-erh)",Grundlage:"var(--ph-grund)",Aufbau:"var(--ph-auf)",Spezifisch:"var(--ph-spez)",Tapering:"var(--ph-taper)",Rennwoche:"var(--ph-race)",Skiurlaub:"var(--ph-erh)"};
+
+/* Bausteine */
+const ez  = d => [{d,z:"E"}];
+const ezS = (d,n=6) => [{d,z:"E"},{r:n,s:[{t:1/3,z:"S"},{t:1,z:"J"}]}];
+const lr  = d => [{d,z:"L"}];
+const lrM = (d1,d2,z) => [{d:d1,z:"L"},{d:d2,z}];
+const rep = (n,d,z,rt) => [{d:2,z:"E"},{r:n,s:[{d,z},{t:rt,z:"J"}]},{d:1.5,z:"E"}];
+const tempo = (pre,d,z,post) => post ? [{d:pre,z:"E"},{d,z},{d:post,z:"E"}] : [{d:pre,z:"E"},{d,z}];
+const S = (k,n,day,steps,note) => ({k,n,day,steps,note});
+
+const W = [
+ {ph:"Erholung", f:"Erholung nach dem Rhein City Run. Nur locker, kein Tempo. Erst wieder laufen, wenn Treppen normal gehen.", s:[
+   S("E","Lockerer Wiederanlauf","Mi–Do",ez(5)),
+   S("E","Locker","Fr–Sa",ez(6)),
+   S("L","Lockerer Sonntagslauf","So",lr(10),"Pace egal, Puls im lockeren Bereich halten.")]},
+ {ph:"Grundlage", f:"Start der Grundlage. Umfang langsam aufbauen und die Schwelle antasten. Lockere Läufe wirklich locker.", s:[
+   S("Q","Schwelle 4 × 1 km","Di–Mi",rep(4,1,"T",1.5)),
+   S("E","Locker + Steigerungen","Do–Fr",ezS(7)),
+   S("L","Langer Lauf","So",lr(14))]},
+ {ph:"Grundlage", f:"Schwellenabschnitte werden länger. Die Steigerungen halten den Laufstil spritzig.", s:[
+   S("Q","Schwelle 3 × 2 km","Di–Mi",rep(3,2,"T",2)),
+   S("E","Locker + Steigerungen","Do–Fr",ezS(8)),
+   S("L","Langer Lauf","So",lr(16))]},
+ {ph:"Grundlage", f:"Erste kurze Intervalle und ein erstes Gefühl für Marathontempo am Ende eines lockeren Laufs.", s:[
+   S("Q","Intervalle 6 × 800 m","Di–Mi",rep(6,.8,"I",2)),
+   S("M","Locker mit MRT-Finish","Do–Fr",tempo(7,2,"M",0),"Die letzten 2 km im aktuellen Marathontempo."),
+   S("L","Langer Lauf","So",lr(18))]},
+ {ph:"Grundlage", rec:true, f:"Entlastungswoche. Etwas weniger Umfang, damit der Körper die letzten Wochen verarbeitet.", s:[
+   S("Q","Schwelle 3 × 1,5 km","Di–Mi",rep(3,1.5,"T",2)),
+   S("E","Locker + Steigerungen","Do–Fr",ezS(7)),
+   S("L","Langer Lauf","So",lr(14))]},
+ {ph:"Grundlage", f:"Längere Schwellenblöcke. Gleichmäßig laufen, der zweite Block darf nicht langsamer sein als der erste.", s:[
+   S("Q","Schwelle 2 × 3 km","Di–Mi",rep(2,3,"T",3)),
+   S("M","Marathontempo 3 km","Do–Fr",tempo(5,3,"M",1)),
+   S("L","Langer Lauf","So",lr(19))]},
+ {ph:"Grundlage", f:"Erster langer Lauf über 20 km. Etwas zu trinken mitnehmen.", s:[
+   S("Q","Intervalle 5 × 1 km","Di–Mi",rep(5,1,"I",2)),
+   S("E","Locker + Steigerungen","Do–Fr",ezS(10)),
+   S("L","Langer Lauf","So",lr(21))]},
+ {ph:"Grundlage", f:"Letzte volle Woche vor Weihnachten. Gute Basis für die Pause.", s:[
+   S("Q","Schwelle 4 × 2 km","Di–Mi",rep(4,2,"T",2)),
+   S("M","Marathontempo 4 km","Do–Fr",tempo(5,4,"M",1)),
+   S("L","Langer Lauf","So",lr(22))]},
+ {ph:"Grundlage", rec:true, f:"Weihnachtswoche, leicht reduziert. Den langen Lauf vor der Abreise in den Skiurlaub erledigen.", s:[
+   S("Q","Tempodauerlauf 4 km","Mo–Di",tempo(2,4,"T",1.5)),
+   S("E","Locker + Steigerungen","Mi–Do",ezS(8)),
+   S("L","Langer Lauf","Sa 26.12.",lr(18),"Am Samstag, weil du am 27.12. abreist.")]},
+ {ph:"Skiurlaub", rec:true, f:"Skiurlaub. Skifahren ist in dieser Woche dein Training. Wenn du Lust hast, ein bis zwei lockere Läufe, sonst einfach genießen.", s:[
+   S("O","Optional locker","nach Lust",ez(6),"Gerne nach einem Skitag mit schweren Beinen weglassen."),
+   S("O","Optional locker","nach Lust",ez(8))]},
+ {ph:"Aufbau", f:"Zurück im Alltag. Ruhig wieder reinkommen, die Form ist nicht weg.", s:[
+   S("Q","Schwelle 4 × 1,5 km","Di–Mi",rep(4,1.5,"T",2)),
+   S("M","Marathontempo 3 km","Do–Fr",tempo(6,3,"M",1)),
+   S("L","Langer Lauf","So",lr(20))]},
+ {ph:"Aufbau", f:"Der lange Lauf wächst über 2 Stunden. Ab jetzt Verpflegung mitnehmen.", s:[
+   S("Q","Intervalle 6 × 1 km","Di–Mi",rep(6,1,"I",2)),
+   S("M","Marathontempo 5 km","Do–Fr",tempo(5,5,"M",1)),
+   S("L","Langer Lauf","So",lr(24),"Etwas Kohlenhydrate dabei haben.")]},
+ {ph:"Aufbau", f:"Erster langer Lauf mit Marathontempo am Ende. Gute Gelegenheit, ein Gel zu testen.", s:[
+   S("Q","Schwelle 3 × 3 km","Di–Mi",rep(3,3,"T",3)),
+   S("E","Locker + Steigerungen","Do–Fr",ezS(10)),
+   S("L","Langer Lauf mit MRT-Finish","So",lrM(22,4,"M"),"Bei km 10 und km 18 ein Gel testen.")]},
+ {ph:"Aufbau", rec:true, f:"Entlastungswoche. Weniger Umfang, Intensität bleibt kurz erhalten.", s:[
+   S("Q","Schwelle 5 × 1 km","Di–Mi",rep(5,1,"T",1.5)),
+   S("E","Locker + Steigerungen","Do–Fr",ezS(8)),
+   S("L","Langer Lauf","So",lr(18))]},
+ {ph:"Aufbau", f:"Langer Marathontempo-Block unter der Woche. Der lange Lauf geht auf 28 km.", s:[
+   S("Q","Schwelle 2 × 4 km","Di–Mi",rep(2,4,"T",3)),
+   S("M","Marathontempo 7 km","Do–Fr",tempo(3,7,"M",2)),
+   S("L","Langer Lauf","So",lr(28),"Gels alle 30–40 Minuten.")]},
+ {ph:"Aufbau", f:"Marathontempo im ermüdeten Zustand. Das ist die wichtigste Einheit der Woche.", s:[
+   S("Q","Intervalle 6 × 1 km","Di–Mi",rep(6,1,"I",2)),
+   S("E","Locker + Steigerungen","Do–Fr",ezS(10)),
+   S("L","Langer Lauf, 8 km MRT","So",lrM(18,8,"M"))]},
+ {ph:"Spezifisch", f:"Ab jetzt läufst du die Tempoabschnitte im Zieltempo 4:58. Jetzt wird es marathonspezifisch.", s:[
+   S("Q","Schwelle 4 × 2 km","Di–Mi",rep(4,2,"T",2)),
+   S("M","Zieltempo 8 km","Do–Fr",tempo(3,8,"G",2)),
+   S("L","Langer Lauf","So",lr(28),"Verpflegung so wie im Rennen.")]},
+ {ph:"Spezifisch", rec:true, f:"Entlastungswoche mit einem kürzeren langen Lauf, dafür mit Zieltempo.", s:[
+   S("Q","Schwelle 3 × 2 km","Di–Mi",rep(3,2,"T",2)),
+   S("E","Locker + Steigerungen","Do–Fr",ezS(9)),
+   S("L","Langer Lauf, 8 km Zieltempo","So",lrM(14,8,"G"))]},
+ {ph:"Spezifisch", f:"10 km Zieltempo unter der Woche und der erste 30er.", s:[
+   S("Q","Intervalle 5 × 1 km","Di–Mi",rep(5,1,"I",2)),
+   S("M","Zieltempo 10 km","Do–Fr",tempo(3,10,"G",1)),
+   S("L","Langer Lauf","So",lr(30))]},
+ {ph:"Spezifisch", f:"Halbmarathon Duisburg als Formtest. Danach in „Paces & Puls“ die neue Zeit eintragen.", s:[
+   S("Q","HM-Tempo 3 × 1 km","Mo–Di",rep(3,1,"H",2)),
+   S("E","Locker + Steigerungen","Do",ezS(5,4)),
+   S("R","Halbmarathon Duisburg","Sa 13.3.",[{d:2,z:"E"},{d:21.1,z:"H"},{d:1,z:"E"}],"Kontrolliert starten, ab km 15 alles geben. Am Sonntag frei.")]},
+ {ph:"Spezifisch", f:"Erst Erholung vom Halbmarathon, dann der längste Lauf des Plans.", s:[
+   S("E","Erholungslauf","Di–Mi",ez(7)),
+   S("Q","Schwelle 3 × 3 km","Do–Fr",rep(3,3,"T",3)),
+   S("L","Längster Lauf","So",lr(32),"Ruhig und gleichmäßig. Puls im lockeren Bereich.")]},
+ {ph:"Spezifisch", f:"Generalprobe. Der lange Lauf wird zur Marathon-Simulation mit Rennschuh, Rennfrühstück und Rennverpflegung.", s:[
+   S("Q","Intervalle 5 × 1 km","Di–Mi",rep(5,1,"I",2)),
+   S("M","Zieltempo 8 km","Do–Fr",tempo(3,8,"G",1)),
+   S("L","Marathon-Simulation 30 km","So",lrM(16,14,"G"),"Alles wie am Renntag: Frühstück, Schuh, Gels.")]},
+ {ph:"Tapering", f:"Tapering beginnt. Umfang runter, Tempo bleibt. Müde Beine sind in dieser Phase normal.", s:[
+   S("Q","Schwelle 3 × 2 km","Di–Mi",rep(3,2,"T",2)),
+   S("M","Zieltempo 6 km","Do–Fr",tempo(3,6,"G",1)),
+   S("L","Langer Lauf","So",lr(24))]},
+ {ph:"Tapering", f:"Weiter reduzieren. Viel schlafen, normal essen, keine neuen Experimente.", s:[
+   S("Q","Schwelle 5 × 1 km","Di–Mi",rep(5,1,"T",1.5)),
+   S("M","Zieltempo 5 km","Do–Fr",tempo(3,5,"G",2)),
+   S("L","Langer Lauf 18 km","So",lrM(13,5,"G"))]},
+ {ph:"Rennwoche", f:"Rennwoche. Kurz und knackig bleiben, ab Freitag Kohlenhydrate laden. Am Sonntag gilt es.", s:[
+   S("Q","Zieltempo 3 × 1 km","Di",rep(3,1,"G",2)),
+   S("E","Locker + Steigerungen","Do",ezS(5,4)),
+   S("R","Düsseldorf Marathon","So 18.4.",[{d:42.2,z:"G"}],"Erste 5 km bei 5:00–5:05, dann 4:55–5:00. Ab km 32 nach Gefühl.")]}
+];
+
+/* ---------- Hilfen ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+const fmtP = s => { s=Math.round(s); return Math.floor(s/60)+":"+pad(s%60); };
+const fmtT = s => { s=Math.round(s); const h=Math.floor(s/3600),m=Math.floor(s%3600/60); return h+":"+pad(m)+":"+pad(s%60); };
+const fmtKm = x => (Math.round(x*10)/10).toFixed(1).replace(".",",");
+const WD = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+const fD = d => d.getDate()+"."+(d.getMonth()+1)+".";
+const day0 = d => new Date(d.getFullYear(),d.getMonth(),d.getDate());
+const wStart = i => { const d=new Date(START); d.setDate(d.getDate()+i*7); return d; };
+const wEnd = i => { const d=wStart(i); d.setDate(d.getDate()+6); return d; };
+const wIdx = d => Math.floor(Math.round((day0(d)-START)/864e5)/7);
+function parseTime(t){ const m=/^(\d+):(\d{1,2})(?::(\d{1,2}))?$/.exec(String(t).trim()); if(!m) return null; return m[3]!==undefined ? (+m[1])*3600+(+m[2])*60+(+m[3]) : (+m[1])*60+(+m[2]); }
+const refSec = () => parseTime(settings.ref) || parseTime(DEFAULTS.ref);
+const hmP = () => refSec()/21.0975;
+function hrR(z){ const h=Z[z].hr; if(!h) return null; const r=settings.hrmax-settings.hrrest; return [Math.round(settings.hrrest+h[0]*r),Math.round(settings.hrrest+h[1]*r)]; }
+function segKm(s,p){ if(s.d) return s.d; const [a,b]=Z[s.z].pace(p); return s.t*60/((a+b)/2); }
+function sessKm(steps,p){ return steps.reduce((t,x)=> t + (x.r ? x.r*x.s.reduce((u,y)=>u+segKm(y,p),0) : segKm(x,p)),0); }
+function weekKm(i,p){ return W[i].s.reduce((t,s)=>t+(s.k==="O"?0:sessKm(s.steps,p)),0); }
+function durTxt(s){ if(s.d) return s.d<1 ? Math.round(s.d*1000)+" m" : fmtKm(s.d)+" km"; const sec=Math.round(s.t*60); return sec<60 ? sec+" s" : Math.floor(sec/60)+":"+pad(sec%60)+" min"; }
+function stepLabel(x,i,n){ if(x.z==="J") return "Erholung"; if(x.z==="S") return "Steigerung"; if(n>1&&i===0&&(x.z==="E"||x.z==="L")) return "Aufwärmen"; if(n>1&&i===n-1&&x.z==="E") return "Abkühlen"; return "Laufen"; }
+function target(x,p){
+  if(x.z==="S") return {pace:"zügig, locker", hr:null};
+  if(x.z==="J") return {pace:"lockeres Traben", hr:null};
+  const [a,b]=Z[x.z].pace(p); const h=hrR(x.z);
+  return {pace:fmtP(b<a?b:a)+"–"+fmtP(b<a?a:b)+" /km", hr:h?h[0]+"–"+h[1]+" bpm":null};
+}
+function stepRows(steps,p){
+  const out=[]; const n=steps.length;
+  steps.forEach((x,i)=>{
+    if(x.r){ out.push({rep:x.r}); x.s.forEach(y=>out.push({inner:true,lab:stepLabel(y,1,3),x:y})); }
+    else out.push({lab:stepLabel(x,i,n),x});
+  });
+  return out.map(r=> r.rep ? r : Object.assign(r,{tg:target(r.x,p)}));
+}
+const CUE={E:"Locker",L:"Langer Lauf",M:"Marathontempo",G:"Zieltempo 4:58",H:"HM-Tempo",T:"Schwelle",I:"Intervall",S:"Steigerung",J:"Trabpause"};
+function icuDur(x){ if(x.d) return String(+x.d.toFixed(2))+"km"; const sec=Math.round(x.t*60), m=Math.floor(sec/60), s=sec%60; return m===0? s+"s" : m+"m"+(s?pad(s):""); }
+function icuLine(x,p){ const [a,b]=Z[x.z].pace(p); return "- "+CUE[x.z]+" "+icuDur(x)+" "+fmtP(Math.min(a,b))+"-"+fmtP(Math.max(a,b))+"/km Pace"; }
+function icuHead(x,i,n,nxt){ if(n===1) return "Lauf"; if(i===0&&nxt&&nxt.r&&nxt.s[0].z==="S") return "Locker"; if(i===0&&(x.z==="E"||x.z==="L")) return x.z==="E"?"Aufwärmen":"Langer Lauf"; if(i===n-1&&x.z==="E") return "Abkühlen"; return "Hauptteil"; }
+function icuText(s,p){
+  const n=s.steps.length;
+  return s.steps.map((x,i)=> x.r ? (x.s[0].z==="S"?"Steigerungen ":"Hauptteil ")+x.r+"x\n"+x.s.map(y=>icuLine(y,p)).join("\n")
+                                 : icuHead(x,i,n,s.steps[i+1])+"\n"+icuLine(x,p)).join("\n\n");
+}
+/* ---------- FIT-Workout + ZIP ---------- */
+const CRCT=[0x0000,0xCC01,0xD801,0x1400,0xF001,0x3C00,0x2800,0xE401,0xA001,0x6C00,0x7800,0xB401,0x5000,0x9C01,0x8801,0x4400];
+function fitCrc(bytes,crc=0){ for(const b of bytes){ let t=CRCT[crc&0xF]; crc=(crc>>4)&0x0FFF; crc=crc^t^CRCT[b&0xF]; t=CRCT[crc&0xF]; crc=(crc>>4)&0x0FFF; crc=crc^t^CRCT[(b>>4)&0xF]; } return crc; }
+function u8str(s,max){ let b=new TextEncoder().encode(s); if(b.length>max-1){ b=b.slice(0,max-1); while(b.length && (b[b.length-1]&0xC0)===0x80) b=b.slice(0,-1); if(b.length && b[b.length-1]>=0xC0) b=b.slice(0,-1);} const o=new Uint8Array(b.length+1); o.set(b); return o; }
+function fitRecord(out,global,fields){
+  // fields: [num, baseType, sizeOrString, value]
+  const enc=fields.map(([num,bt,v])=>{
+    let bytes;
+    if(bt===0x07) bytes=u8str(v,48);
+    else { const sz={0x00:1,0x84:2,0x86:4,0x8C:4}[bt]; bytes=new Uint8Array(sz); let x=v>>>0; for(let i=0;i<sz;i++){ bytes[i]=x&0xFF; x=Math.floor(x/256);} }
+    return [num,bt,bytes];
+  });
+  out.push(0x40,0,0,global&0xFF,global>>8,enc.length); enc.forEach(([n,bt,b])=>out.push(n,b.length,bt));
+  out.push(0x00); enc.forEach(([,,b])=>out.push(...b));
+}
+function fitWorkout(s,p){
+  const flat=[];
+  const add=(x,lab)=>{ const [a,b]=Z[x.z].pace(p); const slow=Math.max(a,b), fast=Math.min(a,b);
+    const inten = lab==="Aufwärmen"?2 : lab==="Abkühlen"?3 : x.z==="J"?1 : 0;
+    flat.push({name:CUE[x.z], dt:x.d?1:0, dv:x.d?Math.round(x.d*100000):Math.round(x.t*60000), lo:Math.round(1e6/slow), hi:Math.round(1e6/fast), inten}); };
+  const n=s.steps.length;
+  s.steps.forEach((x,i)=>{
+    if(x.r){ const from=flat.length; x.s.forEach(y=>add(y,"")); flat.push({rep:true,from,count:x.r}); }
+    else add(x, icuHead(x,i,n,s.steps[i+1]));
+  });
+  const out=[]; const now=Math.floor(Date.now()/1000)-631065600;
+  fitRecord(out,0,[[0,0x00,5],[1,0x84,255],[2,0x84,0],[3,0x8C,(Math.random()*0xFFFFFFF)|1],[4,0x86,now]]);
+  fitRecord(out,26,[[8,0x07,s.n],[4,0x00,1],[6,0x84,flat.length]]);
+  flat.forEach((f,i)=>{
+    if(f.rep) fitRecord(out,27,[[254,0x84,i],[1,0x00,6],[2,0x86,f.from],[4,0x86,f.count]]);
+    else fitRecord(out,27,[[254,0x84,i],[0,0x07,f.name],[1,0x00,f.dt],[2,0x86,f.dv],[3,0x00,0],[4,0x86,0],[5,0x86,f.lo],[6,0x86,f.hi],[7,0x00,f.inten]]);
+  });
+  const data=new Uint8Array(out); const hdr=new Uint8Array(14); const dv=new DataView(hdr.buffer);
+  hdr[0]=14; hdr[1]=0x20; dv.setUint16(2,2132,true); dv.setUint32(4,data.length,true); hdr.set([46,70,73,84],8); dv.setUint16(12,fitCrc(hdr.subarray(0,12)),true);
+  const file=new Uint8Array(14+data.length+2); file.set(hdr); file.set(data,14);
+  new DataView(file.buffer).setUint16(14+data.length,fitCrc(file.subarray(0,14+data.length)),true);
+  return file;
+}
+const C32=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(b){ let c=0xFFFFFFFF; for(const x of b) c=C32[(c^x)&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function zipStore(files){
+  const parts=[], cen=[]; let off=0; const enc=new TextEncoder();
+  const d=new Date(); const dtime=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1); const ddate=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  for(const f of files){
+    const name=enc.encode(f.name), data=f.data instanceof Uint8Array?f.data:enc.encode(f.data), crc=crc32(data);
+    const lh=new Uint8Array(30+name.length), v=new DataView(lh.buffer);
+    v.setUint32(0,0x04034b50,true); v.setUint16(4,20,true); v.setUint16(6,0x0800,true); v.setUint16(8,0,true); v.setUint16(10,dtime,true); v.setUint16(12,ddate,true);
+    v.setUint32(14,crc,true); v.setUint32(18,data.length,true); v.setUint32(22,data.length,true); v.setUint16(26,name.length,true); lh.set(name,30);
+    const ch=new Uint8Array(46+name.length), w=new DataView(ch.buffer);
+    w.setUint32(0,0x02014b50,true); w.setUint16(4,20,true); w.setUint16(6,20,true); w.setUint16(8,0x0800,true); w.setUint16(12,dtime,true); w.setUint16(14,ddate,true);
+    w.setUint32(16,crc,true); w.setUint32(20,data.length,true); w.setUint32(24,data.length,true); w.setUint16(28,name.length,true); w.setUint32(42,off,true); ch.set(name,46);
+    parts.push(lh,data); cen.push(ch); off+=lh.length+data.length;
+  }
+  const cenLen=cen.reduce((t,c)=>t+c.length,0); const end=new Uint8Array(22), e=new DataView(end.buffer);
+  e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,cenLen,true); e.setUint32(16,off,true);
+  const all=[...parts,...cen,end]; const outb=new Uint8Array(all.reduce((t,x)=>t+x.length,0)); let o=0; for(const x of all){ outb.set(x,o); o+=x.length; } return outb;
+}
+function fileBase(s,i){ return ("Woche"+String(i).padStart(2,"0")+"_"+s.n).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ß/g,"ss").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,""); }
+async function downloadSession(i,k){
+  const s=W[i].s[k], p=hmP(), base=fileBase(s,i);
+  const zip=zipStore([{name:base+".fit",data:fitWorkout(s,p)},{name:base+"_intervals.txt",data:s.n+"\n\n"+icuText(s,p)+"\n"}]);
+  const url=URL.createObjectURL(new Blob([zip],{type:"application/zip"}));
+  const a=document.createElement("a"); a.href=url; a.download=base+".zip"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000); toast("Download gestartet");
+}
+
+/* ---------- Strava ---------- */
+let acts=[], stravaState="loading", stravaAt=null;
+function runsIn(i){ return acts.filter(a=>a._w===i).sort((a,b)=>a._d-b._d); }
+function matchWeek(i){
+  const runs=runsIn(i).slice(); const ss=W[i].s; const res=ss.map(()=>null); const p=hmP();
+  const last=ss.length-1;
+  if(runs.length && (ss[last].k==="L"||ss[last].k==="R")){
+    const longest=runs.reduce((m,a)=>a._km>m._km?a:m,runs[0]);
+    if(longest._km >= .6*sessKm(ss[last].steps,p)){ res[last]=longest; runs.splice(runs.indexOf(longest),1); }
+  }
+  for(let k=0;k<ss.length;k++){ if(res[k]) continue; if(!runs.length) break; res[k]=runs.shift(); }
+  return {res,extra:runs};
+}
+async function loadStrava(){
+  stravaState="loading"; renderSync();
+  try{
+    const r=await fetch("data/activities.json?ts="+Date.now(),{cache:"no-store"});
+    if(r.status===404){ stravaState="nodata"; renderAll(); return; }
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const j=await r.json();
+    acts=(Array.isArray(j.activities)?j.activities:[]).map(a=>{
+      const m=/^(\d+)-(\d+)-(\d+)T(\d+):(\d+)/.exec(a.start_local||""); const d=m?new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5]):new Date(NaN);
+      return {id:a.id,name:a.name,_d:d,_w:wIdx(d),_km:a.distance_m/1000,_pace:a.moving_time_s/(a.distance_m/1000)};
+    }).filter(a=>!isNaN(a._d) && a._km>1);
+    stravaAt=j.updated_at?new Date(j.updated_at):null; stravaState="ok"; renderAll();
+  }catch(e){ stravaState="error"; renderAll(); }
+}
+function renderSync(){
+  const dot=$("sync-dot"), tx=$("sync-text"), act=$("sync-act"); dot.className="dot"; act.innerHTML="";
+  const btn=(label,fn)=>{ const b=document.createElement("button"); b.className="linkbtn"; b.textContent=label; b.onclick=fn; act.appendChild(b); };
+  if(stravaState==="loading"){ dot.classList.add("load"); tx.textContent="Lade Läufe…"; return; }
+  if(stravaState==="ok"){ dot.classList.add("ok"); const d=stravaAt; tx.textContent=acts.length+" Läufe seit 26.10."+(d&&!isNaN(d)?" · Stand "+fD(d)+" "+pad(d.getHours())+":"+pad(d.getMinutes())+" Uhr":""); btn("Neu laden",loadStrava); return; }
+  if(stravaState==="nodata"){ tx.textContent="Noch keine Laufdaten. Die GitHub Action legt sie beim ersten Lauf an."; btn("Neu laden",loadStrava); return; }
+  dot.classList.add("bad"); tx.textContent="Laufdaten konnten nicht geladen werden."; btn("Erneut laden",loadStrava);
+}
+
+/* ---------- UI-Zustand ---------- */
+const today=day0(new Date());
+const curW=Math.max(0,Math.min(W.length-1,wIdx(today)));
+let view=curW;
+function toast(t){ const el=$("toast"); el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,1800); }
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast("Kopiert"); }catch(e){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); toast("Kopiert");}catch(_){toast("Bitte manuell markieren und kopieren");} ta.remove(); } }
+
+function renderHead(){
+  const days=Math.round((RACE-today)/864e5);
+  $("days").textContent = days>0 ? days : (days===0?"Heute":"✓");
+  const w=W[curW];
+  $("st-week").textContent = (curW===0?"Woche 0":"Woche "+curW)+" von "+(W.length-1);
+  $("st-phase").textContent = w.ph+(w.rec?" · Entlastung":"")+" · "+fD(wStart(curW))+"–"+fD(wEnd(curW));
+  const p=hmP(), soll=weekKm(curW,p), ist=runsIn(curW).reduce((t,a)=>t+a._km,0);
+  $("st-km").textContent = fmtKm(soll)+" / "+(stravaState==="ok"?fmtKm(ist):"–")+" km";
+  $("st-runs").textContent = stravaState==="ok" ? runsIn(curW).length+" von "+W[curW].s.filter(s=>s.k!=="O").length+" Läufen erledigt" : "Ist-Werte kommen aus intervals.icu";
+  const pred=refSec()*Math.pow(42.195/21.0975,1.06);
+  $("st-pred").textContent = "Prognose aus HM "+settings.ref+": "+fmtT(pred).slice(0,4)+" h";
+  renderSync();
+}
+
+function sessionCard(s,i,k,match){
+  const p=hmP(), km=sessKm(s.steps,p), kd=KIND[s.k];
+  const past = day0(wEnd(i)) < today;
+  let cls="card", ist="";
+  if(match){ cls+=" done"; ist=`<div class="ist ok"><b>✓ Erledigt</b> · ${fmtKm(match._km)} km · Ø ${fmtP(match._pace)} /km · ${WD[match._d.getDay()]} ${fD(match._d)} · <a href="https://intervals.icu/activities/${encodeURIComponent(match.id)}" target="_blank" rel="noopener">intervals.icu</a></div>`; }
+  else if(stravaState==="ok" && past && s.k!=="O"){ cls+=" missed"; ist=`<div class="ist miss"><b>Nicht gefunden</b> · kein passender Lauf gefunden</div>`; }
+  else if(stravaState==="ok" && s.k!=="O"){ ist=`<div class="ist">Offen</div>`; }
+  const rows=stepRows(s.steps,p).map(r=>{
+    if(r.rep) return `<li class="rep"><span>${r.rep}× wiederholen</span></li>`;
+    return `<li class="${r.inner?"in":""}"><span class="lab">${r.lab}</span><span class="det">${durTxt(r.x)}</span><span class="sub">${esc(r.tg.pace)}${r.tg.hr?" · "+r.tg.hr:""}</span></li>`;
+  }).join("");
+  return `<article class="${cls}">
+    <div class="row1"><span class="pill" style="--c:${kd.c}">${kd.t}</span><span class="daychip">${esc(s.day)}</span></div>
+    <div><h3>${esc(s.n)}</h3><div class="km">≈ ${fmtKm(km)} km <small>geplant</small></div></div>
+    ${s.note?`<p class="note">${esc(s.note)}</p>`:""}
+    <ul class="steps" aria-label="Schritte">${rows}</ul>
+    <div class="cardfoot"><button class="copy dl" id="dl-${i}-${k}" data-w="${i}" data-k="${k}">Workout-Datei laden</button><button class="copy cp" id="cp-${i}-${k}" data-w="${i}" data-k="${k}">Text kopieren</button></div>
+    <details class="icu"><summary>intervals.icu-Text anzeigen</summary><pre>${esc(icuText(s,p))}</pre></details>
+    ${ist}
+  </article>`;
+}
+
+function renderWeek(){
+  const i=view, w=W[i], p=hmP();
+  const m = stravaState==="ok" ? matchWeek(i) : {res:w.s.map(()=>null),extra:[]};
+  const soll=weekKm(i,p), ist=runsIn(i).reduce((t,a)=>t+a._km,0);
+  const pct=Math.min(100,soll?ist/soll*100:0);
+  const extra = m.extra.length ? `<p class="extra">Zusätzlich gelaufen: ${m.extra.map(a=>`${WD[a._d.getDay()]} ${fD(a._d)} ${fmtKm(a._km)} km`).join(" · ")}</p>` : "";
+  $("v-woche").innerHTML = `
+    <div class="weekhead">
+      <div><h2>${i===0?"Woche 0":"Woche "+i}${i===curW?" · aktuell":""}</h2><div class="dates">${fD(wStart(i))} – ${fD(wEnd(i))}${wEnd(i).getFullYear()} </div></div>
+      <div class="nav"><button id="wprev" ${i===0?"disabled":""} aria-label="Vorherige Woche">← Zurück</button><button id="wcur" ${i===curW?"disabled":""}>Heute</button><button id="wnext" ${i===W.length-1?"disabled":""} aria-label="Nächste Woche">Weiter →</button></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill" style="--c:${PH[w.ph]}">${w.ph}</span>${w.rec?`<span class="pill ghost" style="--c:${PH[w.ph]}">Entlastung</span>`:""}</div>
+    <p class="focus">${esc(w.f)}</p>
+    <div class="prog"><div class="t"><span>Ist ${stravaState==="ok"?fmtKm(ist):"–"} km</span><span>Soll ≈ ${fmtKm(soll)} km</span></div><div class="bar"><i style="width:${stravaState==="ok"?pct:0}%"></i></div></div>
+    <div class="cards">${w.s.map((s,k)=>sessionCard(s,i,k,m.res[k])).join("")}</div>
+    ${extra}
+    <div class="footcheck">
+      <h4>Fußcheck jeden Morgen (Plantarfaszie links)</h4>
+      <div class="scale">
+        <div><b>Anlaufschmerz 0–2 von 10</b>Plan normal laufen.</div>
+        <div><b>3–4 von 10</b>Tempo raus, Einheit kürzer und locker.</div>
+        <div><b>5+ oder schlechter werdend</b>Pause, Rad statt Laufen, Physio fragen.</div>
+      </div>
+    </div>`;
+  $("wprev").onclick=()=>{view=Math.max(0,view-1);renderWeek();};
+  $("wnext").onclick=()=>{view=Math.min(W.length-1,view+1);renderWeek();};
+  $("wcur").onclick=()=>{view=curW;renderWeek();};
+  document.querySelectorAll("#v-woche .cp").forEach(b=>b.onclick=()=>copyText(icuText(W[+b.dataset.w].s[+b.dataset.k],hmP())));
+  document.querySelectorAll("#v-woche .dl").forEach(b=>b.onclick=()=>downloadSession(+b.dataset.w,+b.dataset.k));
+}
+
+function renderPlan(){
+  const p=hmP(), n=W.length, cw=26, H=170, top=10, bot=24, max=60, Wd=40+n*cw;
+  const y=v=>top+(H-top-bot)*(1-v/max);
+  let svg=`<svg viewBox="0 0 ${Wd} ${H}" width="${Wd}" height="${H}" role="img" aria-label="Wochenkilometer Soll und Ist">`;
+  [0,20,40,60].forEach(v=>{ svg+=`<line x1="34" x2="${Wd}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="28" y="${y(v)+3}" text-anchor="end">${v}</text>`; });
+  W.forEach((w,i)=>{
+    const x=40+i*cw, s=weekKm(i,p), a=runsIn(i).reduce((t,r)=>t+r._km,0);
+    svg+=`<rect x="${x+3}" y="${y(Math.min(s,max))}" width="${cw-6}" height="${y(0)-y(Math.min(s,max))}" fill="var(--chip)" stroke="${i===curW?"var(--accent)":"var(--line)"}" stroke-width="${i===curW?1.5:1}" rx="2"/>`;
+    svg+=`<rect x="${x+3}" y="${y(Math.min(s,max))-4}" width="${cw-6}" height="3" fill="${PH[w.ph]}" rx="1"/>`;
+    if(stravaState==="ok" && a>0) svg+=`<rect x="${x+8}" y="${y(Math.min(a,max))}" width="${cw-16}" height="${y(0)-y(Math.min(a,max))}" fill="var(--accent)" rx="1.5"/>`;
+    if(i%2===0||i===n-1) svg+=`<text x="${x+cw/2}" y="${H-8}" text-anchor="middle">${i}</text>`;
+  });
+  svg+=`</svg>`;
+  const rows=W.map((w,i)=>{
+    const s=weekKm(i,p), a=runsIn(i).reduce((t,r)=>t+r._km,0);
+    const ss=w.s.map(x=>esc(x.n)+" "+fmtKm(sessKm(x.steps,p))).join(" · ");
+    return `<button class="wk${i===curW?" cur":""}" style="--c:${PH[w.ph]}" data-i="${i}">
+      <span class="n">${i}</span>
+      <span class="mid"><span class="d">${fD(wStart(i))}–${fD(wEnd(i))} · ${w.ph}${w.rec?" · Entlastung":""}</span><span class="ss">${ss}</span></span>
+      <span class="kms">≈ ${fmtKm(s)} km${stravaState==="ok"&&wStart(i)<=today?`<br><span class="a">${fmtKm(a)} km</span>`:""}</span>
+    </button>`;
+  }).join("");
+  $("v-plan").innerHTML=`
+    <div class="chartbox"><h3>Wochenkilometer</h3>
+      <div class="legend"><span><i style="background:var(--chip);box-shadow:inset 0 0 0 1px var(--line)"></i>Soll</span><span><i style="background:var(--accent)"></i>Ist aus intervals.icu</span><span>Farbstreifen = Phase</span></div>
+      <div class="chartscroll">${svg}</div></div>
+    <div class="weeks">${rows}</div>`;
+  document.querySelectorAll("#v-plan .wk").forEach(b=>b.onclick=()=>{ view=+b.dataset.i; renderWeek(); setTab("woche"); window.scrollTo(0,0); });
+}
+
+function renderPaces(){
+  const p=hmP(), pred=refSec()*Math.pow(42.195/21.0975,1.06), need=GOAL_SEC/Math.pow(2,1.06);
+  const zrows=["E","L","M","G","H","T","I","S"].map(k=>{
+    const t=target({z:k},p);
+    return `<tr><td><span class="zk">${k}</span></td><td>${Z[k].n}</td><td class="num mono">${t.pace}</td><td class="num mono">${t.hr||"–"}</td></tr>`;
+  }).join("");
+  const gap=pred-GOAL_SEC;
+  $("v-paces").innerHTML=`
+    <div class="grid2">
+      <div class="panel">
+        <h3>Referenz</h3>
+        <form id="pform" class="field" style="gap:12px" novalidate>
+          <div class="field"><label for="in-ref">Halbmarathon-Zeit (h:mm:ss)</label><input id="in-ref" inputmode="numeric" value="${esc(settings.ref)}"></div>
+          <div class="field"><label for="in-max">Maximalpuls</label><input id="in-max" type="number" min="150" max="220" value="${settings.hrmax}"></div>
+          <div class="field"><label for="in-rest">Ruhepuls</label><input id="in-rest" type="number" min="30" max="80" value="${settings.hrrest}"></div>
+          <div><button class="copy" type="submit">Paces neu berechnen</button></div>
+        </form>
+        <p class="hint">Nach dem Rhein City Run und nach dem HM in Duisburg die echte Zeit eintragen. Alle Einheiten rechnen sich dann neu. Die Werte bleiben in diesem Browser gespeichert.</p>
+      </div>
+      <div class="panel">
+        <h3>Prognose</h3>
+        <div style="display:flex;gap:28px;flex-wrap:wrap">
+          <div><div class="big num">${fmtT(pred).slice(0,4)}</div><div class="hint">Marathon aus HM ${esc(settings.ref)}</div></div>
+          <div><div class="big num">${fmtT(need).slice(0,7)}</div><div class="hint">HM-Zeit, die ungefähr 3:30 entspricht</div></div>
+        </div>
+        <p class="hint">${gap>60?`Bis 3:30 fehlen laut Prognose noch etwa ${Math.round(gap/60)} Minuten. Genau dafür ist der Plan da. Die Zieltempo-Einheiten trainieren 4:58 /km auch dann, wenn dein aktuelles Marathontempo noch langsamer ist.`:"Deine aktuelle Form trägt 3:30. Jetzt geht es darum, das Tempo über 42 km zu halten."}</p>
+        <p class="hint">Prognose nach der Riegel-Formel. Sie gilt für gut trainierte Läufer mit ausreichend langen Läufen. Bei wenig Umfang ist der Marathon oft etwas langsamer.</p>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:18px">
+      <h3>Trainingsbereiche</h3>
+      <div class="tablewrap"><table><thead><tr><th></th><th>Bereich</th><th>Pace</th><th>Puls</th></tr></thead><tbody>${zrows}</tbody></table></div>
+      <p class="hint">Puls nach Karvonen aus Maximal- und Ruhepuls. Im Zweifel gilt bei lockeren Läufen der Puls, bei Tempoeinheiten die Pace. Bei Wind, Hitze oder auf dem Laufband nach Gefühl anpassen.</p>
+    </div>`;
+  $("pform").onsubmit=e=>{
+    e.preventDefault();
+    const r=$("in-ref").value.trim(), mx=+$("in-max").value, rs=+$("in-rest").value;
+    const sec=parseTime(r);
+    if(!sec || sec<3600 || sec>3*3600){ toast("Zeit bitte als h:mm:ss eingeben, z. B. 1:42:30"); return; }
+    if(!(mx>=150&&mx<=220) || !(rs>=30&&rs<=80)){ toast("Puls-Werte prüfen"); return; }
+    settings={ref:r,hrmax:mx,hrrest:rs};
+    try{ localStorage.setItem("dus330-settings",JSON.stringify(settings)); }catch(_){}
+    renderAll(); toast("Paces aktualisiert");
+  };
+}
+
+const TIPS=[
+ {key:true,h:"Locker heißt wirklich locker",b:`<p>Mit drei Läufen pro Woche zählt jede Einheit. Die lockeren und langen Läufe bringen dir nur etwas, wenn du dabei ausgeruht genug für die harten Tage bleibst.</p><ul><li>Langer Lauf und lockere Läufe: Puls unter ca. 148.</li><li>Lieber 10 Sekunden zu langsam als 10 zu schnell.</li><li>Tempo gibt es nur in den markierten Abschnitten.</li></ul>`},
+ {key:true,h:"Plantarfaszie im Griff behalten",b:`<ul><li>Täglich Waden dehnen, gestreckt und gebeugt, je 3 × 30 s.</li><li>Langsame Wadenheber auf einer Stufe, 3 × 12, den Weg runter über 3 Sekunden. Gut nach dem Gym-Training.</li><li>Fußsohle morgens mit einem Ball oder einer gefrorenen Flasche rollen.</li><li>Nicht barfuß auf hartem Boden, gerade morgens.</li><li>Steigerungen und Intervalle auf ebenem Untergrund, keine Bergsprints.</li><li>Wenn der Anlaufschmerz zwei Wochen nicht besser wird: Physio.</li></ul>`},
+ {h:"Flexible Wochentage",b:`<p>Die Tage sind Vorschläge. Wichtig ist nur: mindestens ein Tag Abstand zwischen zwei Läufen, und nicht die Qualitätseinheit direkt vor dem langen Lauf.</p><ul><li>Ideal: Di Qualität, Do locker oder Tempo, So lang.</li><li>Fällt ein Lauf aus, streiche den lockeren, nicht den langen.</li><li>Nicht nachholen, indem du zwei Einheiten auf einen Tag packst.</li></ul>`},
+ {key:true,h:"Workouts auf die Uhr",b:`<p>Der Plan steht in deinem intervals.icu-Kalender. intervals.icu schickt die Einheiten der nächsten Woche automatisch über die Zepp-App auf deine Balance 2, inklusive Pace-Zielen pro Schritt. Auf der Uhr findest du sie unter Workout → Mein Trainingsplan.</p><ul><li>Einheit verschieben: in intervals.icu per Drag &amp; Drop, die Uhr übernimmt das.</li><li>Neue HM-Zeit: das Skript mit <code>--hm h:mm:ss</code> erneut starten und hier unter „Paces &amp; Puls“ eintragen.</li><li>Einheit teilen: „Workout-Datei laden“ speichert ein ZIP mit FIT-Datei und intervals.icu-Text. Die FIT-Datei zieht man in intervals.icu auf einen Kalendertag. Sie enthält deine Paces, nicht die der anderen Person.</li><li>Einzelne Einheit von Hand: „Text kopieren“ und im Workout-Builder einfügen.</li></ul>`},
+ {h:"Verpflegung trainieren",b:`<p>Im Marathon brauchst du ungefähr 60–90 g Kohlenhydrate pro Stunde. Der Magen muss das lernen.</p><ul><li>Ab Woche 12 in jedem langen Lauf über 22 km Gels nehmen.</li><li>Alle 30–40 Minuten ein Gel, mit Wasser.</li><li>Im Rennen nur nehmen, was du im Training getestet hast.</li></ul>`},
+ {h:"Die Uhr als Frühwarnsystem",b:`<p>Dein Ruhepuls liegt bei etwa 43, deine HRV bei etwa 64. Achte auf Abweichungen, nicht auf einzelne Werte.</p><ul><li>Ruhepuls 5+ Schläge höher und HRV deutlich unter normal: Qualitätseinheit gegen einen lockeren Lauf tauschen.</li><li>Zwei solche Tage in Folge: Ruhetag.</li><li>Erkältung unterhalb des Halses: nicht laufen.</li></ul>`},
+ {h:"Tennis, Gym & Co.",b:`<p>Der Plan deckt nur das Laufen ab. Dein anderer Sport zählt trotzdem als Belastung.</p><ul><li>Kein schweres Beintraining oder Hyrox am Tag vor der Qualitätseinheit oder dem langen Lauf.</li><li>Krafttraining für Hüfte, Rumpf und Waden schützt in den langen Wochen.</li><li>In den letzten 10 Tagen vor dem Marathon nichts Neues und nichts Hartes.</li></ul>`},
+ {h:"Schrittfrequenz",b:`<p>Laut Strava läufst du meist mit 160–165 Schritten pro Minute. Etwas mehr, um 5 %, entlastet Ferse und Fußsohle.</p><ul><li>Nicht erzwingen. Bei den Steigerungen bewusst kurze, schnelle Schritte üben.</li><li>Auf dem Laufband ist das gut zu trainieren.</li></ul>`},
+ {h:"Renntag Düsseldorf",b:`<ul><li>Zwei bis drei Tage vorher Kohlenhydrate laden, etwa 8–10 g pro kg Körpergewicht pro Tag.</li><li>Frühstück drei Stunden vor dem Start, so wie bei der Marathon-Simulation.</li><li>Erste 5 km bei 5:00–5:05 /km, dann 4:55–5:00. Zu schnelles Losrennen kostet am Ende Minuten.</li><li>Nach Pace laufen, nicht nach Puls. Der Puls driftet im Rennen nach oben.</li><li>Ab km 32 entscheidet der Kopf. Bis dahin Energie sparen.</li></ul>`},
+ {h:"Pläne passen sich an",b:`<p>Nach dem Rhein City Run und nach dem Halbmarathon in Duisburg trägst du die echte Zeit unter „Paces &amp; Puls“ ein. Alle Paces rechnen sich neu. Wenn du größere Änderungen am Plan brauchst, sag mir im Chat Bescheid.</p>`}
+];
+function renderTips(){ $("v-tipps").innerHTML=`<div class="tips">${TIPS.map(t=>`<div class="tip${t.key?" key":""}"><h3>${t.h}</h3>${t.b}</div>`).join("")}</div>`; }
+
+/* ---------- Tabs ---------- */
+const TABS=["woche","plan","paces","tipps"];
+function setTab(t){
+  if(!TABS.includes(t)) t="woche";
+  TABS.forEach(x=>{ $("v-"+x).hidden = x!==t; $("t-"+x).setAttribute("aria-selected", x===t?"true":"false"); });
+  try{ localStorage.setItem("dus330-tab",t); }catch(_){}
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+
+function renderAll(){ renderHead(); renderWeek(); renderPlan(); renderPaces(); renderTips(); }
+renderAll();
+let initTab = (location.hash||"").slice(1);
+if(!TABS.includes(initTab)){ try{ initTab=localStorage.getItem("dus330-tab")||"woche"; }catch(_){ initTab="woche"; } }
+setTab(initTab);
+loadStrava();
+})();
+</script>
+
+</body>
+</html>
