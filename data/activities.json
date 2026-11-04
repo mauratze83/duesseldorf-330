@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-01T11:18:31+00:00",
+ "updated_at": "2026-11-04T00:13:17+00:00",
  "activities": [
   {
    "id": "i202656118",
@@ -21,6 +21,13 @@
    "start_local": "2026-11-01T10:12:32",
    "distance_m": 10015,
    "moving_time_s": 3426
+  },
+  {
+   "id": "i205303573",
+   "name": "Afternoon Laufen",
+   "start_local": "2026-11-03T16:33:24",
+   "distance_m": 8606,
+   "moving_time_s": 2759
   }
  ]
 }
