@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-06T00:34:26+00:00",
+ "updated_at": "2026-11-07T23:06:24+00:00",
  "activities": [
   {
    "id": "i202656118",
@@ -35,6 +35,13 @@
    "start_local": "2026-11-05T16:52:32",
    "distance_m": 9037,
    "moving_time_s": 3094
+  },
+  {
+   "id": "i206975830",
+   "name": "Nach ausgiebiger Weinprobe sind die Beine eher schwer",
+   "start_local": "2026-11-07T13:10:15",
+   "distance_m": 10807,
+   "moving_time_s": 3757
   }
  ]
 }
