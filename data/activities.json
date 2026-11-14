@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-11T11:54:08+00:00",
+ "updated_at": "2026-11-14T00:29:33+00:00",
  "activities": [
   {
    "id": "i202656118",
@@ -49,6 +49,13 @@
    "start_local": "2026-11-11T11:47:40",
    "distance_m": 7127,
    "moving_time_s": 2418
+  },
+  {
+   "id": "i209590012",
+   "name": "Pre-HYROX Run aka. anschwitzen",
+   "start_local": "2026-11-13T15:55:19",
+   "distance_m": 8004,
+   "moving_time_s": 2620
   }
  ]
 }
