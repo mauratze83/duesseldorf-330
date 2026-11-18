@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-14T00:29:33+00:00",
+ "updated_at": "2026-11-18T01:53:16+00:00",
  "activities": [
   {
    "id": "i202656118",
@@ -56,6 +56,13 @@
    "start_local": "2026-11-13T15:55:19",
    "distance_m": 8004,
    "moving_time_s": 2620
+  },
+  {
+   "id": "i211314728",
+   "name": "Locker mit MRT-Finish",
+   "start_local": "2026-11-17T16:40:17",
+   "distance_m": 9024,
+   "moving_time_s": 3048
   }
  ]
 }
