@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-25T03:11:54+00:00",
+ "updated_at": "2026-11-26T13:56:11+00:00",
  "activities": [
   {
    "id": "i202656118",
@@ -84,6 +84,13 @@
    "start_local": "2026-11-24T16:31:27",
    "distance_m": 9019,
    "moving_time_s": 2875
+  },
+  {
+   "id": "i214897918",
+   "name": "Locker + Steigerungen",
+   "start_local": "2026-11-26T11:53:40",
+   "distance_m": 8608,
+   "moving_time_s": 2884
   }
  ]
 }
